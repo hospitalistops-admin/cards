@@ -14,9 +14,15 @@ function useToast() {
   const show = useCallback((text) => {
     setMsg(text);
     window.clearTimeout(show._t);
-    show._t = window.setTimeout(() => setMsg(null), 2400);
+    // Errors stay up longer so you can actually read them.
+    const isError = /fail|error|blocked|too short|missing/i.test(String(text));
+    show._t = window.setTimeout(() => setMsg(null), isError ? 8000 : 2400);
   }, []);
-  return { msg, show };
+  const hide = useCallback(() => {
+    window.clearTimeout(show._t);
+    setMsg(null);
+  }, [show]);
+  return { msg, show, hide };
 }
 
 function useOnline() {
@@ -205,7 +211,7 @@ export default function App() {
         )}
       </div>
 
-      {toast.msg && <Toast>{toast.msg}</Toast>}
+      {toast.msg && <Toast onClose={toast.hide}>{toast.msg}</Toast>}
     </div>
   );
 }
@@ -322,10 +328,11 @@ function OnlinePill({ online }) {
   );
 }
 
-function Toast({ children }) {
+function Toast({ children, onClose }) {
   return (
     <div
       role="status"
+      onClick={onClose}
       style={{
         position: "fixed",
         left: "50%",
@@ -340,6 +347,11 @@ function Toast({ children }) {
         zIndex: 200,
         boxShadow: "5px 5px 0 #000",
         border: "2px solid #000",
+        maxWidth: "min(90vw, 680px)",
+        lineHeight: 1.4,
+        cursor: "pointer",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
       }}
     >
       {children}

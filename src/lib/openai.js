@@ -10,23 +10,34 @@ function assertKey(key) {
 
 export async function transcribeAudio({ blob, apiKey, model }) {
   assertKey(apiKey);
+  if (!blob || blob.size < 1000) {
+    throw new Error(`Recording too short or empty (${blob?.size || 0} bytes). Hold the mic button longer.`);
+  }
   const form = new FormData();
-  // Safari records audio/mp4, others audio/webm; Whisper accepts both.
-  const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("webm") ? "webm" : "ogg";
+  // Safari: audio/mp4. Chrome/Firefox: audio/webm. Whisper accepts both, but
+  // the filename extension is used as a format hint, so get it right.
+  const type = blob.type || "";
+  const ext =
+    type.includes("mp4") || type.includes("mpeg") ? "m4a" :
+    type.includes("webm") ? "webm" :
+    type.includes("ogg") ? "ogg" : "webm";
   form.append("file", blob, `dictation.${ext}`);
   form.append("model", model || "whisper-1");
   form.append("response_format", "text");
+
+  console.info("[transcribe] sending", { size: blob.size, type, ext, model: model || "whisper-1" });
 
   const res = await fetch(`${OPENAI_BASE}/audio/transcriptions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}` },
     body: form,
   });
+  const bodyText = await res.text().catch(() => "");
   if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`Transcription failed (${res.status}): ${msg.slice(0, 300)}`);
+    console.error("[transcribe] failed", res.status, bodyText);
+    throw new Error(`Transcription failed (${res.status}): ${bodyText.slice(0, 400) || res.statusText}`);
   }
-  return (await res.text()).trim();
+  return bodyText.trim();
 }
 
 const SYSTEM_PROMPT = `You are a clinical scribe. You convert a physician's short dictated rounding note into the RoundingCard JSON schema.
@@ -62,6 +73,8 @@ export async function parseToCard({ transcript, apiKey, model }) {
     },
   };
 
+  console.info("[parse] sending", { model: body.model, transcriptChars: transcript.length });
+
   const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -70,16 +83,25 @@ export async function parseToCard({ transcript, apiKey, model }) {
     },
     body: JSON.stringify(body),
   });
+  const bodyText = await res.text().catch(() => "");
   if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`Parse failed (${res.status}): ${msg.slice(0, 400)}`);
+    console.error("[parse] failed", res.status, bodyText);
+    throw new Error(`Parse failed (${res.status}): ${bodyText.slice(0, 400) || res.statusText}`);
   }
-  const data = await res.json();
+  let data;
+  try { data = JSON.parse(bodyText); } catch {
+    console.error("[parse] non-JSON response body", bodyText);
+    throw new Error("Parse failed: non-JSON response from OpenAI");
+  }
   const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Parse failed: empty response");
+  if (!content) {
+    console.error("[parse] empty content", data);
+    throw new Error("Parse failed: empty response");
+  }
   try {
     return JSON.parse(content);
   } catch (e) {
+    console.error("[parse] content was not JSON", content);
     throw new Error("Parse failed: model returned non-JSON");
   }
 }

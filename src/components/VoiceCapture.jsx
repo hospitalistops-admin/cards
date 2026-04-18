@@ -37,9 +37,19 @@ export default function VoiceCapture({ apiKey, chatModel, transcribeModel, onlin
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        console.info("[voice] recorded", {
+          size: blob.size, type: blob.type, chunks: chunksRef.current.length,
+        });
+        if (blob.size < 1000) {
+          onToast?.("Recording too short — hold to record longer");
+          setState("idle");
+          return;
+        }
         await process(blob);
       };
-      rec.start();
+      // Emit a dataavailable event every second so very short recordings still
+      // produce chunks (some browsers skip the event on stop if none was fired).
+      rec.start(1000);
       recRef.current = rec;
       setState("recording");
     } catch (e) {
