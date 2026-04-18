@@ -1,0 +1,25 @@
+{
+  "name": "free-form-cards",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "iPad-first rounding dashboard: voice-dictated, offline-capable cards that paste into Apple Freeform.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "deploy": "vite build && gh-pages -d dist -t"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "gh-pages": "^6.2.0",
+    "vite": "^5.4.11",
+    "vite-plugin-pwa": "^0.21.1"
+  }
+}
