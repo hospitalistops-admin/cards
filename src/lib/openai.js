@@ -52,7 +52,8 @@ Rules:
   - "na"        — not applicable (or not mentioned at all — default)
 - Translate casual references: "HOB up" -> headOfBed.status "ok"; "Foley still in" -> indwelling.status "attention" or "pending" depending on plan; "bowel reg pending" -> bowel.status "pending" with note; etc.
 - Put short clinical detail in .note (e.g. "Enoxaparin 40 SQ daily"), not in oneliner.
-- vitals/labs are flat string->string maps. trends is string->one of "up"|"down"|"flat".
+- vitals and labs are arrays of {name, value} — e.g. vitals: [{"name":"HR","value":"78"},{"name":"BP","value":"128/74"}]. Empty arrays if nothing is mentioned.
+- trends is an array of {name, direction} where direction is "up" | "down" | "flat" — e.g. trends: [{"name":"Cr","direction":"up"}].
 - Room, age, los are strings even if numeric in the dictation.`;
 
 export async function parseToCard({ transcript, apiKey, model }) {
@@ -98,10 +99,45 @@ export async function parseToCard({ transcript, apiKey, model }) {
     console.error("[parse] empty content", data);
     throw new Error("Parse failed: empty response");
   }
+  let parsed;
   try {
-    return JSON.parse(content);
+    parsed = JSON.parse(content);
   } catch (e) {
     console.error("[parse] content was not JSON", content);
     throw new Error("Parse failed: model returned non-JSON");
   }
+  return normalizeParsedCard(parsed);
+}
+
+// The schema represents vitals/labs as arrays of {name,value} and trends as
+// arrays of {name,direction} because strict mode doesn't allow arbitrary-keyed
+// maps. Our internal card model uses objects — convert here so the rest of
+// the app doesn't need to know the schema detail.
+function normalizeParsedCard(p) {
+  const kvToObj = (arr) => {
+    if (!Array.isArray(arr)) return {};
+    const out = {};
+    for (const item of arr) {
+      if (item && typeof item.name === "string" && item.name && typeof item.value === "string") {
+        out[item.name] = item.value;
+      }
+    }
+    return out;
+  };
+  const trendToObj = (arr) => {
+    if (!Array.isArray(arr)) return {};
+    const out = {};
+    for (const item of arr) {
+      if (item && typeof item.name === "string" && item.name && typeof item.direction === "string") {
+        out[item.name] = item.direction;
+      }
+    }
+    return out;
+  };
+  return {
+    ...p,
+    vitals: kvToObj(p.vitals),
+    labs: kvToObj(p.labs),
+    trends: trendToObj(p.trends),
+  };
 }

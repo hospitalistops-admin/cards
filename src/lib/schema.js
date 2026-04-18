@@ -97,8 +97,35 @@ export function newCard(seed = {}) {
   };
 }
 
-// JSON schema used with OpenAI structured output. Mirrors newCard().
-// `additionalProperties: false` + required keys are needed for strict mode.
+// JSON schema for OpenAI structured output (strict mode).
+//
+// Strict mode rules we're obeying:
+//   - every object schema has `properties`, `additionalProperties: false`,
+//     and a `required` array listing ALL property keys
+//   - no `additionalProperties: <schema>` patterns (arbitrary-keyed maps
+//     are not supported); we represent those as arrays of {name,value}
+//     pairs and convert them to objects after the response returns
+//     (see convertParsedCard in openai.js).
+const KV_ITEM = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    name: { type: "string" },
+    value: { type: "string" },
+  },
+  required: ["name", "value"],
+};
+
+const TREND_ITEM = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    name: { type: "string" },
+    direction: { type: "string", enum: ["up", "down", "flat"] },
+  },
+  required: ["name", "direction"],
+};
+
 export const CARD_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -121,19 +148,19 @@ export const CARD_JSON_SCHEMA = {
     oneliner: { type: "string", description: "One-line patient summary." },
     disposition: { type: "string", description: "Planned disposition." },
     vitals: {
-      type: "object",
-      additionalProperties: { type: "string" },
-      description: "Key vitals as a flat map of string values (e.g. {\"HR\": \"78\", \"BP\": \"128/74\"}).",
+      type: "array",
+      items: KV_ITEM,
+      description: "Vitals as a list of {name, value}, e.g. [{name:'HR', value:'78'}, {name:'BP', value:'128/74'}].",
     },
     labs: {
-      type: "object",
-      additionalProperties: { type: "string" },
-      description: "Key labs as a flat map of string values.",
+      type: "array",
+      items: KV_ITEM,
+      description: "Labs as a list of {name, value}, e.g. [{name:'Cr', value:'1.8'}].",
     },
     trends: {
-      type: "object",
-      additionalProperties: { type: "string", enum: ["up", "down", "flat"] },
-      description: "Lab trend direction keyed by lab name.",
+      type: "array",
+      items: TREND_ITEM,
+      description: "Lab trend directions, e.g. [{name:'Cr', direction:'up'}].",
     },
     fhbid: {
       type: "object",
