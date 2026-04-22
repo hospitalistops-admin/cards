@@ -94,6 +94,8 @@ export function newCard(seed = {}) {
     fhbid,
     todos: Array.isArray(seed.todos) ? seed.todos.filter((t) => typeof t === "string") : [],
     pending: Array.isArray(seed.pending) ? seed.pending.filter((t) => typeof t === "string") : [],
+    history: typeof seed.history === "string" ? seed.history : "",
+    problems: Array.isArray(seed.problems) ? seed.problems.filter((t) => typeof t === "string") : [],
   };
 }
 
@@ -192,10 +194,19 @@ export const CARD_JSON_SCHEMA = {
       items: { type: "string" },
       description: "Results, consults, or items being awaited.",
     },
+    history: {
+      type: "string",
+      description: "Free-text narrative summary of the patient's history and what's going on. A few sentences. Empty string if not mentioned.",
+    },
+    problems: {
+      type: "array",
+      items: { type: "string" },
+      description: "Problem list — short labels for active problems (e.g. 'AKI', 'CHF exacerbation', 'HTN'). Empty array if not mentioned.",
+    },
   },
   required: [
     "room", "initials", "age", "sex", "los", "system", "acuity",
     "oneliner", "disposition", "vitals", "labs", "trends",
-    "fhbid", "todos", "pending",
+    "fhbid", "todos", "pending", "history", "problems",
   ],
 };

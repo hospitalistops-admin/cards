@@ -54,7 +54,9 @@ Rules:
 - Put short clinical detail in .note (e.g. "Enoxaparin 40 SQ daily"), not in oneliner.
 - vitals and labs are arrays of {name, value} — e.g. vitals: [{"name":"HR","value":"78"},{"name":"BP","value":"128/74"}]. Empty arrays if nothing is mentioned.
 - trends is an array of {name, direction} where direction is "up" | "down" | "flat" — e.g. trends: [{"name":"Cr","direction":"up"}].
-- Room, age, los are strings even if numeric in the dictation.`;
+- Room, age, los are strings even if numeric in the dictation.
+- history is a short free-text narrative summary of the patient's story and current situation (a few sentences). Pull from any backstory, HPI, hospital course, or "what's going on" the dictation includes. Empty string if the dictation doesn't provide narrative context.
+- problems is a concise problem list — short labels for active problems (e.g. "AKI", "CHF exacerbation", "HTN", "T2DM"). Extract explicit diagnoses and active issues mentioned in the dictation. Empty array if none mentioned.`;
 
 export async function parseToCard({ transcript, apiKey, model }) {
   assertKey(apiKey);

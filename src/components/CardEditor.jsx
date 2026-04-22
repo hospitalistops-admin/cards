@@ -167,6 +167,23 @@ export default function CardEditor({
             <ListEditor title="Round plan" items={draft.todos || []} onChange={(todos) => set({ todos })} placeholder="todo…" />
             <ListEditor title="Pending" items={draft.pending || []} onChange={(pending) => set({ pending })} placeholder="awaiting…" />
           </Row>
+
+          <Field label="History (free-form summary)">
+            <textarea
+              rows={4}
+              value={draft.history || ""}
+              onChange={(e) => set({ history: e.target.value })}
+              style={{ ...inp, resize: "vertical", fontSize: 13, lineHeight: 1.4 }}
+              placeholder="Narrative summary of the patient's story and what's going on…"
+            />
+          </Field>
+
+          <ListEditor
+            title="Problem list"
+            items={draft.problems || []}
+            onChange={(problems) => set({ problems })}
+            placeholder="e.g. AKI, CHF exacerbation…"
+          />
         </div>
 
         {/* Footer */}

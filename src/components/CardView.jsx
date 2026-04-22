@@ -149,6 +149,46 @@ export default function CardView({ card }) {
         </div>
       )}
 
+      {/* History + Problem list (smaller text, at the bottom) */}
+      {(card.history || card.problems?.length > 0) && (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: card.history && card.problems?.length > 0 ? "1.4fr 1fr" : "1fr",
+          padding: "10px 14px",
+          borderBottom: "3px solid #000",
+          background: "#FAF7EE",
+        }}>
+          {card.history && (
+            <div style={{ paddingRight: card.problems?.length > 0 ? 12 : 0 }}>
+              <SectionHeader>History</SectionHeader>
+              <div style={{ fontSize: 10, lineHeight: 1.4, color: "#333", whiteSpace: "pre-wrap" }}>
+                {card.history}
+              </div>
+            </div>
+          )}
+          {card.problems?.length > 0 && (
+            <div style={{
+              paddingLeft: card.history ? 12 : 0,
+              borderLeft: card.history ? "2px solid #00000025" : "none",
+            }}>
+              <SectionHeader>Problems</SectionHeader>
+              <ul style={{
+                margin: 0, padding: 0, listStyle: "none",
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10, lineHeight: 1.45, color: "#333",
+              }}>
+                {card.problems.map((p, i) => (
+                  <li key={i} style={{ display: "flex", gap: 6 }}>
+                    <span style={{ opacity: 0.5 }}>•</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Footer */}
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
